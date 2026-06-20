@@ -1,6 +1,10 @@
 MIT License
 
-Copyright (c) 2026 QiuYun753
+Original work Copyright (c) 2025 木有知 (muyouzhi6)
+Modifications and additions Copyright (c) 2025 秋云
+
+This software is derived from astrbot_plugin_context_enhancer
+(https://github.com/muyouzhi6/astrbot_plugin_context_enhancer)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

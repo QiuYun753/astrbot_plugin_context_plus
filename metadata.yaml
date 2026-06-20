@@ -1,0 +1,8 @@
+name: "astrbot_plugin_context_plus"
+author: "秋云"
+version: "1.0.0"
+description: "超长记忆上下文增强插件：按天拆分日志 + LLM每日摘要 + 群成员画像 + DeepSeek缓存优化架构，实现低成本长记忆群聊。支持Token统计。"
+tags: ["工具", "聊天", "上下文增强", "长记忆", "缓存优化", "Token统计", "每日摘要", "群成员画像"]
+license: "MIT"
+python_version: ">=3.8"
+astrbot_version: ">=3.5.0"

@@ -1,0 +1,12 @@
+{
+    "enabled_groups": [],
+    "recent_chats_count": 15,
+    "bot_replies_count": 5,
+    "max_images_in_context": 4,
+    "enable_image_caption": true,
+    "image_caption_provider_id": "",
+    "image_caption_prompt": "请简洁地描述这张图片的主要内容，重点关注与聊天相关的信息",
+    "collect_bot_replies": true,
+    "token_stats_enabled": true,
+    "auto_cleanup_old_logs": true
+}

@@ -1,0 +1,183 @@
+{
+    "enabled_groups": {
+        "description": "启用插件的群组ID列表",
+        "type": "list",
+        "hint": "空列表表示对所有群生效，否则只对指定群生效",
+        "default": []
+    },
+    "recent_chats_count": {
+        "description": "上下文包含的最近聊天记录数量",
+        "type": "int",
+        "hint": "用于构建上下文的聊天消息总数（包括普通、图片和触发类消息）",
+        "default": 3,
+        "minimum": 1
+    },
+    "bot_replies_count": {
+        "description": "上下文包含的机器人回复数量",
+        "type": "int",
+        "hint": "最多收集多少条机器人自己的回复消息",
+        "default": 2,
+        "minimum": 0
+    },
+    "enable_image_caption": {
+        "description": "是否为图片生成描述文本",
+        "type": "bool",
+        "hint": "开启后会为图片组件生成文字描述（需要具备图像分析能力的LLM）",
+        "default": true
+    },
+    "image_caption_provider_id": {
+        "description": "图片描述专用的LLM提供商ID",
+        "type": "string",
+        "hint": "可选，专门用于图片描述的LLM提供商ID，为空则使用主提供商",
+        "default": ""
+    },
+    "image_caption_prompt": {
+        "description": "图片描述的提示词模板",
+        "type": "string",
+        "hint": "用于生成图片描述的提示词",
+        "default": "请简洁地描述这张图片的主要内容，重点关注与聊天相关的信息"
+    },
+    "image_caption_timeout": {
+        "type": "int",
+        "title": "图像转述超时秒数",
+        "description": "调用大语言模型进行图像内容描述时的超时时间（秒）。",
+        "default": 30
+    },
+    "max_images_in_context": {
+        "description": "上下文中包含的最大图片数量",
+        "type": "int",
+        "hint": "向LLM请求时，上下文中最多包含多少张图片",
+        "default": 4,
+        "minimum": 0
+    },
+    "collect_bot_replies": {
+        "description": "是否收集机器人自身的回复",
+        "type": "bool",
+        "hint": "开启后会收集机器人的回复消息，构建更完整的对话历史",
+        "default": true
+    },
+    "inactive_cleanup_days": {
+        "description": "不活跃群组缓存清理天数",
+        "type": "int",
+        "hint": "一个群组如果连续N天没有消息，将自动清理其上下文缓存以节省内存",
+        "default": 7,
+        "minimum": 1
+    },
+    "cleanup_interval_seconds": {
+        "description": "缓存清理检查间隔（秒）",
+        "type": "int",
+        "hint": "每隔多少秒检查一次是否有不活跃的群组需要清理",
+        "default": 600,
+        "minimum": 1
+    },
+    "command_prefixes": {
+        "description": "触发LLM回复的命令前缀",
+        "type": "list",
+        "hint": "当消息以此列表中的任何前缀开头时，将被视为触发LLM的命令",
+        "default": ["/", "!", "！", "#", ".", "。"]
+    },
+    "duplicate_check_window_messages": {
+        "description": "消息去重检查窗口大小（条数）",
+        "type": "int",
+        "hint": "在判断新消息是否重复时，向前追溯检查的消息数量",
+        "default": 5,
+        "minimum": 1
+    },
+    "duplicate_check_time_seconds": {
+        "description": "消息去重时间窗口（秒）",
+        "type": "int",
+        "hint": "在判断新消息是否重复时，两条消息时间戳在此秒数内才被视为可能重复",
+        "default": 30,
+        "minimum": 1
+    },
+    "passive_reply_instruction": {
+        "description": "指令：当用户@机器人或使用命令时，附加在上下文末尾的指令。",
+        "type": "string",
+        "hint": "告诉LLM这是对用户直接请求的被动回复。变量: {sender_name}, {sender_id}, {original_prompt}",
+        "default": "现在，群成员 {sender_name} (ID: {sender_id}) 正在对你说话，或者提到了你，TA说：\"{original_prompt}\"\n你需要根据以上聊天记录和你的角色设定，直接回复该用户。"
+    },
+    "active_speech_instruction": {
+        "description": "指令：当机器人决定主动发言时（如被其他插件触发），附加在上下文末尾的指令。",
+        "type": "string",
+        "hint": "告诉LLM这是它观察对话后进行的主动插话。变量: {original_prompt}",
+        "default": "以上是最近的聊天记录。现在，你决定主动参与讨论，并想就以下内容发表你的看法：\"{original_prompt}\"\n你需要根据以上聊天记录和你的角色设定，自然地切入对话。"
+    },
+    "verbose_context": {
+        "description": "是否启用详细上下文模式",
+        "type": "bool",
+        "hint": "开启后，消息中的表情、回复等组件将被转换为包含更多元数据（如ID、名称）的详细文本，但这会增加Token消耗。",
+        "default": false
+    },
+    "debug_log_llm_requests": {
+        "description": "是否将 LLM 请求写入本地调试日志文件",
+        "type": "bool",
+        "hint": "开启后，每次 LLM 请求的完整 system_prompt 和 prompt 会被写入 {data_dir}/debug_llm_requests/{group_id}.log，用于调试测试。注意会增加磁盘 IO，生产环境建议关闭。",
+        "default": false
+    },
+    "profile_enabled": {
+        "description": "是否启用全局群成员画像",
+        "type": "bool",
+        "hint": "启用后，会创建并加载 _profile.md 文件，记录群成员好感度、称呼、性格等长期信息，作为最优先级的上下文，永久稳定加载。适用于角色扮演和个性化互动。",
+        "default": true
+    },
+    "profile_update_instruction": {
+        "description": "自定义群成员画像更新提示词",
+        "type": "string",
+        "hint": "可选。用于 /profile_update 命令的提示词，告诉 LLM 如何分析聊天记录生成群成员画像。为空则使用默认提示词。",
+        "default": ""
+    },
+    "chat_log_enabled": {
+        "description": "是否启用聊天日志文件（用于长记忆+缓存优化）",
+        "type": "bool",
+        "hint": "关闭后，不再记录和读取聊天日志文件",
+        "default": true
+    },
+    "chat_log_max_chars": {
+        "description": "聊天日志最大字符数",
+        "type": "int",
+        "hint": "每次LLM请求时最多读取的日志字符数",
+        "default": 16000
+    },
+    "summary_enabled": {
+        "description": "是否启用每日摘要总结",
+        "type": "bool",
+        "hint": "启用后，跨天时自动用LLM总结昨天的重要聊天内容，长期记忆。",
+        "default": true
+    },
+    "summary_provider_id": {
+        "description": "摘要专用LLM提供商ID",
+        "type": "string",
+        "hint": "可选，配置后使用此提供商生成每日摘要。为空则使用主提供商。推荐使用主模型以共享缓存优化。",
+        "default": ""
+    },
+    "summary_prompt": {
+        "description": "摘要生成提示词",
+        "type": "string",
+        "hint": "自定义摘要提示词，为空则使用默认提示词（过滤日常吹水，保留重要信息）",
+        "default": ""
+    },
+    "summary_max_chars": {
+        "description": "摘要文件最大字符数",
+        "type": "int",
+        "hint": "摘要文件超过此长度时，自动压缩最早的条目",
+        "default": 10000
+    },
+    "chat_log_days": {
+        "description": "保留完整日志的天数",
+        "type": "int",
+        "hint": "AI可以看到最近N天的完整聊天记录（非精简）",
+        "default": 5
+    },
+    "auto_cleanup_old_logs": {
+        "description": "是否自动删除超过 chat_log_days 的旧日志文件",
+        "type": "bool",
+        "hint": "启用后，超过保留天数的详细日志文件会被自动删除，只保留摘要文件。可节省磁盘空间。",
+        "default": true
+    },
+    "token_stats_enabled": {
+        "description": "是否启用 Token 统计日志",
+        "type": "bool",
+        "hint": "启用后，每次 LLM 回复后会在日志中显示本次请求的 token 使用量和今日累计统计（包括缓存命中率）",
+        "default": true
+    }
+}
