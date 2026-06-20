@@ -287,6 +287,48 @@ class ContextPlus(Star):
         """异步初始化部分，例如加载缓存"""
         await self._load_cache_from_file()
         logger.info(f"成功从 {self.cache_path} 异步加载上下文缓存")
+        
+        # 初始化时触发一次人设保存（遍历缓存中的所有群组）
+        await self._initialize_persona_prompts()
+    
+    async def _initialize_persona_prompts(self) -> None:
+        """初始化时为所有已知群组保存人设提示词。
+        
+        从缓存中读取所有群组 ID，尝试获取人设并保存。
+        这样 heartflow_context 在启动时就能读取到人设。
+        """
+        try:
+            # 从缓存中获取所有群组 ID
+            group_ids = list(self.group_messages.keys())
+            
+            if not group_ids:
+                logger.info("[ContextPlus] 缓存中没有群组信息，等待第一次 LLM 请求时保存人设")
+                return
+            
+            logger.info(f"[ContextPlus] 初始化人设保存，群组数量: {len(group_ids)}")
+            
+            # 尝试获取默认人设
+            persona_mgr = self.context.persona_manager
+            default_persona = None
+            try:
+                personas = await persona_mgr.get_personas()
+                if personas and len(personas) > 0:
+                    default_persona = personas[0]
+                    logger.debug(f"[ContextPlus] 默认人设: {default_persona.name}")
+            except Exception as e:
+                logger.warning(f"[ContextPlus] 获取默认人设失败: {e}")
+            
+            if not default_persona or not default_persona.system_prompt:
+                logger.warning("[ContextPlus] 没有可用的人设，跳过初始化保存")
+                return
+            
+            # 为每个群组保存人设
+            for group_id in group_ids:
+                await self._save_persona_prompt(group_id, default_persona.system_prompt)
+            
+            logger.info(f"[ContextPlus] 人设初始化完成，已保存 {len(group_ids)} 个群组")
+        except Exception as e:
+            logger.error(f"[ContextPlus] 人设初始化失败: {e}")
 
     async def terminate(self, context: Context):
         """插件终止时，异步持久化上下文并关闭会话"""
@@ -1326,7 +1368,12 @@ class ContextPlus(Star):
                 request, context_enhancement, image_urls_for_context, chat_log_content
             )
 
-            # 6.1 调试日志：将注入后的完整请求写入本地文件（开关控制）
+            # 6.1 保存人设提示词（供 heartflow_context 读取）
+            # 只保存人设部分，去掉聊天日志部分
+            if request.system_prompt:
+                await self._save_persona_prompt(group_id, request.system_prompt)
+
+            # 6.2 调试日志：将注入后的完整请求写入本地文件（开关控制）
             await self._log_llm_request_debug(
                 group_id, event, request, scene, original_prompt
             )
@@ -1469,6 +1516,47 @@ class ContextPlus(Star):
                 request.image_urls = []
             request.image_urls.extend(image_urls)
             logger.debug(f"[ContextPlus] 向请求中追加了 {len(image_urls)} 张图片URL。")
+
+    async def _save_persona_prompt(self, group_id: str, system_prompt: str) -> None:
+        """保存当前群组的人设提示词到文件。
+        
+        供 heartflow_context 读取，确保两者使用相同的人设前缀，
+        从而共享 DeepSeek Prefix Caching 缓存。
+        
+        文件位置：{data_dir}/personas/{group_id}.txt
+        只保存人设部分（去掉聊天日志部分）。
+        """
+        try:
+            # 提取人设部分：找到第一个 < 标签的位置，截取之前的内容
+            # 聊天日志以 <historical_summary> 或 <chat_logs_ 开头
+            persona_prompt = system_prompt
+            
+            # 查找第一个 < 标签的位置
+            first_tag_pos = persona_prompt.find("<")
+            if first_tag_pos > 0:
+                # 截取 < 标签之前的内容作为人设部分
+                persona_prompt = persona_prompt[:first_tag_pos].strip()
+            
+            # 如果人设部分为空，不保存
+            if not persona_prompt:
+                logger.debug(f"[ContextPlus] 人设部分为空，不保存")
+                return
+            
+            # 创建 personas 目录
+            personas_dir = os.path.join(self.data_dir, "personas")
+            os.makedirs(personas_dir, exist_ok=True)
+            
+            # 保存人设到文件
+            persona_file = os.path.join(personas_dir, f"{group_id}.txt")
+            async with aiofiles.open(persona_file, "w", encoding="utf-8") as f:
+                await f.write(persona_prompt)
+            
+            logger.debug(
+                f"[ContextPlus] 人设已保存: {persona_file}, "
+                f"长度: {len(persona_prompt)} 字符"
+            )
+        except Exception as e:
+            logger.error(f"[ContextPlus] 保存人设失败: {e}")
 
     async def _log_llm_request_debug(
         self, group_id: str, event: AstrMessageEvent, request: ProviderRequest,
